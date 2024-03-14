@@ -290,7 +290,34 @@ module register_file(clk, rd_addr, we_addr, we_data, rd_data, we);
   input we; // Необходимо ли перезаписать содержимое регистра
 
   output [3:0] rd_data; // Данные, полученные в результате чтения из регистрового файла
-  // TODO: implementation
+  
+  wire [3:0] registers [3:0];
+  wire not_we_addr0, not_we_addr1;
+  not_gate not1(we_addr[0], not_we_addr0);
+  not_gate not2(we_addr[1], not_we_addr1);
+  wire ac1_4, ac5_8, ac9_12, ac13_16;
+  and_3bit ac11(we, not_we_addr0, not_we_addr1, ac1_4);
+  and_3bit ac12(we, we_addr[0], not_we_addr1, ac5_8);
+  and_3bit ac13(we, not_we_addr0, we_addr[1], ac9_12);
+  and_3bit ac14(we, we_addr[0], we_addr[1], ac13_16);
+  d_latch dlatch1(clk, we_data[0], ac1_4, registers[0][0]);
+  d_latch dlatch2(clk, we_data[1], ac1_4, registers[0][1]);
+  d_latch dlatch3(clk, we_data[2], ac1_4, registers[0][2]);
+  d_latch dlatch4(clk, we_data[3], ac1_4, registers[0][3]);
+  d_latch dlatch5(clk, we_data[0], ac5_8, registers[1][0]);
+  d_latch dlatch6(clk, we_data[1], ac5_8, registers[1][1]);
+  d_latch dlatch7(clk, we_data[2], ac5_8, registers[1][2]);
+  d_latch dlatch8(clk, we_data[3], ac5_8, registers[1][3]);
+  d_latch dlatch9(clk, we_data[0], ac9_12, registers[2][0]);
+  d_latch dlatch10(clk, we_data[1], ac9_12, registers[2][1]);
+  d_latch dlatch11(clk, we_data[2], ac9_12, registers[2][2]);
+  d_latch dlatch12(clk, we_data[3], ac9_12, registers[2][3]);
+  d_latch dlatch13(clk, we_data[0], ac13_16, registers[3][0]);
+  d_latch dlatch14(clk, we_data[1], ac13_16, registers[3][1]);
+  d_latch dlatch15(clk, we_data[2], ac13_16, registers[3][2]);
+  d_latch dlatch16(clk, we_data[3], ac13_16, registers[3][3]);
+  // используем мультиплексор на 8 выборов как на 4 и дописываем к контрольным битам слева 0, чтобы искало в 000-011.
+  multiplexor_4bit multiplexor5(registers[0], registers[1], registers[2], registers[3], registers[0], registers[1], registers[2], registers[3], {1'b0, rd_addr}, rd_data);
 endmodule
 
 module counter(clk, addr, control, immediate, data);
@@ -301,4 +328,7 @@ module counter(clk, addr, control, immediate, data);
 
   output [3:0] data; // Данные из значения под номером addr, подающиеся на выход
   // TODO: implementation
+  wire [3:0] wr;
+  alu a(data, immediate, {2'b10, control}, wr);
+  register_file rf(clk, addr, addr, wr, data, 1'b1);
 endmodule
